@@ -1,78 +1,106 @@
 Spring boot mysql
 
 
-Add BRIDGE NETWORK
-
-docker network create -d bridge my-bridge-network
-
-Add VOLUME 
+minikube start
 
 
-mkdir -p /home/priya/eclipse-workspace/may21/mysql8-data
+-----
+
+If local mysql is running then execute below b4 proceeding
+  sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
+sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
+ 
+ -------
+
+ eval $(minikube docker-env)
 
 
-docker run --name mysql-standalone --net my-bridge-network --volume=/home/priya/eclipse-workspace/may21/mysql8-data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=persondb -e MYSQL_USER=sa -e MYSQL_PASSWORD=password -d mysql
-
-
-docker ps
-
-
-docker logs mysql-standalone
-
-
-verify application properties spring.datasource.url pointing to docker mysql container name
+Verify updated K8s properties in application.proprties
 
 
 mvn -U clean compile package
 
 
-docker build -t springboot-mysql .	
+docker build -t springboot-mysql-k8s:1 .
 
 
 docker image ls
 
 
-docker container run --network my-bridge-network --name springboot-mysql -p 8080:8080 -d springboot-mysql
+kubectl apply -f k8sscripts/secrets.yaml
 
 
-docker logs springboot-mysql
-
-browser
-
-http://localhost:8080/swagger-ui.html
-
-POST JSON
-
-{ "age": 29, "firstName": "shivapriya", "lastName": "t" }
-
-PUT JSON
-
-{ "age": 30, "firstName": "shivapriya", "lastName": "tm" }
+kubectl apply -f k8sscripts/pv.yaml
 
 
-docker exec -it mysql-standalone bash
-
-mysql -u sa -p 
+kubectl apply -f k8sscripts/pvc.yaml
 
 
-password
+kubectl apply -f k8sscripts/deployment-mysql.yaml
 
 
-use persondb
+kubectl apply -f k8sscripts/service-mysql.yaml
 
 
-select * from person
+kubectl apply -f k8sscripts/deployment-spring.yaml
+
+
+kubectl apply -f k8sscripts/service-spring.yaml
+
+
+kubectl get secrets,pv,pvc,pods,svc                verify all running
+
+
+minikube ip  > 192.168.49.2
+
+
+GEt the port from output of   kubectl get svc  spring-boot-svc 
+
+
+spring-boot-svc   LoadBalancer   10.109.42.94   <pending>     8080:30341/TCP   12m
+
+
+
+final url= http://192.168.49.2:30341/person
+
+
+curl -X POST -H "Content-Type: application/json" --data '{"age": 90000,"firstName":"Ganesha", "lastName":"S"}' 192.168.49.2:30341/person
+
+
+curl -X POST -H "Content-Type: application/json" --data '{"age": 100000,"firstName":"Shiva", "lastName":""}' 192.168.49.2:30341/person
+
+
+curl -X PUT -H "Content-Type: application/json" --data '{"age": 100000,"firstName":"Shiva", "lastName":"S"}' http://192.168.49.2:30341/person/2
+
+
+
+curl -X POST -H "Content-Type: application/json" --data '{"age": 30,"firstName":"Shivapriya", "lastName":"t"}' http://192.168.49.2:30341/person
+
+
+curl -X DELETE http://192.168.49.2:30341/person/3
 
 
 CLEANUP
 
-docker stop mysql-standalone
+kubectl delete -f k8sscripts/secrets.yaml
 
-docker stop springboot-mysql
 
-docker rm mysql-standalone
+kubectl delete -f k8sscripts/pv.yaml
 
-docker rm springboot-mysql
 
-docker rmi springboot-mysql
+kubectl delete -f k8sscripts/pvc.yaml
 
+
+kubectl delete -f k8sscripts/deployment-mysql.yaml 
+
+
+kubectl delete -f k8sscripts/service-mysql.yaml
+
+
+kubectl delete -f k8sscripts/deployment-spring.yaml
+
+
+kubectl delete -f k8sscripts/service-spring.yaml
+
+
+docker rmi springboot-mysql-k8s:1
