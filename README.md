@@ -26,34 +26,40 @@ docker build -t springboot-mysql-k8s:1 .
 
 docker image ls
 
+// RENAME helmscripts for code reference
 
-kubectl apply -f k8sscripts/secrets.yaml
+mkdir helmscripts
+
+cd helmscripts
+
+helm create springbootmysqlhelm
+
+tree springbootmysqlhelm
+
+//COPY file values.yaml and templates/ entire folder from RENAMED folder and overwrite
+
+cd springbootmysqlhelm
+
+//
+Add Ingress
+
+helm repo add nginx-stable https://helm.nginx.com/stable
+
+helm repo update
 
 
-kubectl apply -f k8sscripts/pv.yaml
+helm template springbootmysqlhelm
 
+helm lint springbootmysqlhelm
 
-kubectl apply -f k8sscripts/pvc.yaml
+helm install springbootmysqlhelmrelease springbootmysqlhelm
 
-
-kubectl apply -f k8sscripts/deployment-mysql.yaml
-
-
-kubectl apply -f k8sscripts/service-mysql.yaml
-
-
-kubectl apply -f k8sscripts/deployment-spring.yaml
-
-
-kubectl apply -f k8sscripts/service-spring.yaml
-
-
-kubectl apply -f k8sscripts/ingress.yaml
+helm list -a
 
 
 kubectl get secrets,pv,pvc,pods,svc,ingress                verify all running
 
-kubectl logs spring-boot-deployment-84655686dc-p5pzv
+kubectl logs spring-boot-deployment-77c56c659d-78hd6
 
 
 minikube ip  > 192.168.49.2
@@ -87,28 +93,6 @@ curl -X DELETE http://human.com/person/3
 CLEANUP
 
 
-kubectl delete -f k8sscripts/pv.yaml
-
-
-kubectl delete -f k8sscripts/pvc.yaml
-
-
-kubectl delete -f k8sscripts/secrets.yaml
-
-
-kubectl delete -f k8sscripts/deployment-mysql.yaml 
-
-
-kubectl delete -f k8sscripts/service-mysql.yaml
-
-
-kubectl delete -f k8sscripts/deployment-spring.yaml
-
-
-kubectl delete -f k8sscripts/service-spring.yaml
-
-
-kubectl delete -f k8sscripts/ingress.yaml
-
+helm delete springbootmysqlhelmrelease
 
 docker rmi springboot-mysql-k8s:1

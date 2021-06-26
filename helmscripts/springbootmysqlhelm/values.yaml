@@ -1,0 +1,72 @@
+service:
+  type: ClusterIP
+  port: 80
+
+secret:
+   name: mysql-secret
+   databasename: cGVyc29uZGI=
+   username: c2E=
+   userpassword: cGFzc3dvcmQ=
+   rootpassword: cGFzc3dvcmQ=
+pv:
+   name: mysql-pv
+   storageclass: standard
+   storagecapacity: 5Mi
+   accessMode: ReadWriteOnce
+   hostpath: "/home/priya/eclipse-workspace/may21/k8sdatamysqllatest"
+labelsapp: spring-boot-mysql   
+pvc:
+   name: mysql-pvc
+   storageclass: standard
+   storagecapacity: 5Mi
+   accessMode: ReadWriteOnce
+deployments:     
+   - name: mysql-deployment
+     strategyType: Recreate
+     containerImage: mysql:latest
+     containerName: mysql
+     containerImagePullPolicy: IfNotPresent
+     containerPort: 3306
+     envvars: true
+     env:
+        - fieldName : MYSQL_ROOT_PASSWORD
+          fieldKey: root-password
+        - fieldName : MYSQL_DATABASE
+          fieldKey: database-name
+        - fieldName : MYSQL_USER
+          fieldKey: user-username
+        - fieldName : MYSQL_PASSWORD
+          fieldKey: user-password
+     volumeMountName: mysql-persistent-storage
+     volumes: true
+     volumeMountPath: /var/lib/mysql
+     volumeClaimName: mysql-pvc     
+   - name: spring-boot-deployment
+     containerImage: springboot-mysql-k8s:1
+     containerName: springboot-mysql-k8s-ingress-helm-container
+     containerImagePullPolicy: Never
+     containerPort: 8080
+     envvars: true
+     env:
+        - fieldName : DB_NAME
+          fieldKey: database-name
+        - fieldName : DB_USERNAME
+          fieldKey: user-username 
+        - fieldName : DB_PASSWORD
+          fieldKey: user-password
+svcs:
+   - name: spring-boot-svc
+     port: 8080
+     targetPort: 8080
+     protocol: TCP
+     portName: http
+   - name: mysql-svc
+     port: 3306
+     #clusterIP: None
+ingress:
+   name: human-ingress
+   host: human.com
+   serviceName: spring-boot-svc
+   servicePort: 8080
+   path: /person   
+   

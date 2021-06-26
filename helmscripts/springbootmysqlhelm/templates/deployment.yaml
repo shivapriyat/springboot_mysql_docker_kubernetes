@@ -1,0 +1,51 @@
+{{ $root := .Values }}
+{{ range $deployment := .Values.deployments }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $deployment.name }}
+  labels:
+     app: {{ $root.labelsapp }}
+spec:
+   replicas: 1
+   selector:
+      matchLabels:
+         app: {{  $root.labelsapp }}
+   {{ if $deployment.strategyType }}
+   strategy:
+      type: {{ $deployment.strategyType }}
+   {{ end }}
+   template:
+    metadata:
+      labels:
+        app: {{  $root.labelsapp }}
+    spec:
+      {{ if $deployment.volumes }}
+      volumes:
+         - name: {{ $deployment.volumeMountName }}
+           persistentVolumeClaim:
+               claimName: {{ $deployment.volumeClaimName }}
+      {{ end }}
+      containers:
+         - image: {{ $deployment.containerImage }}
+           name: {{ $deployment.containerName }}
+           imagePullPolicy: {{ $deployment.containerImagePullPolicy }}
+           ports:
+              - containerPort: {{ $deployment.containerPort }}
+           {{ if eq $deployment.envvars true }}
+           env: 
+             {{ range $env := $deployment.env }}
+            - name: {{ $env.fieldName }}
+              valueFrom:
+                 secretKeyRef:
+                    name: {{ $root.secret.name }}
+                    key: {{ $env.fieldKey }}
+            {{ end }}
+           {{ end }}
+           {{if $deployment.volumes }}
+           volumeMounts:
+            - name: {{ $deployment.volumeMountName }}
+              mountPath: {{ $deployment.volumeMountPath }}
+           {{ end }}
+{{ end}}
