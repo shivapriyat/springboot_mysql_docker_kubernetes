@@ -48,47 +48,52 @@ kubectl apply -f k8sscripts/deployment-spring.yaml
 kubectl apply -f k8sscripts/service-spring.yaml
 
 
-kubectl get secrets,pv,pvc,pods,svc                verify all running
+kubectl apply -f k8sscripts/ingress.yaml
+
+
+kubectl get secrets,pv,pvc,pods,svc,ingress                verify all running
+
+kubectl logs spring-boot-deployment-84655686dc-p5pzv
 
 
 minikube ip  > 192.168.49.2
 
 
-GEt the port from output of   kubectl get svc  spring-boot-svc 
+sudo vi /etc/hosts ---> 192.168.49.2 human.com
 
 
-spring-boot-svc   LoadBalancer   10.109.42.94   <pending>     8080:30341/TCP   12m
+final url= http://human.com/person
+
+
+curl -X GET http://human.com/person
+
+
+curl -X POST -H "Content-Type: application/json" --data '{"age": 90000,"firstName":"Ganesha", "lastName":"S"}' http://human.com/person
+
+
+curl -X POST -H "Content-Type: application/json" --data '{"age": 100000,"firstName":"Shiva", "lastName":""}' http://human.com/person
+
+
+curl -X PUT -H "Content-Type: application/json" --data '{"age": 100000,"firstName":"Shiva", "lastName":"S"}' http://human.com/person/2
 
 
 
-final url= http://192.168.49.2:30341/person
+curl -X POST -H "Content-Type: application/json" --data '{"age": 30,"firstName":"Shivapriya", "lastName":"t"}' http://human.com/person
 
 
-curl -X POST -H "Content-Type: application/json" --data '{"age": 90000,"firstName":"Ganesha", "lastName":"S"}' 192.168.49.2:30341/person
-
-
-curl -X POST -H "Content-Type: application/json" --data '{"age": 100000,"firstName":"Shiva", "lastName":""}' 192.168.49.2:30341/person
-
-
-curl -X PUT -H "Content-Type: application/json" --data '{"age": 100000,"firstName":"Shiva", "lastName":"S"}' http://192.168.49.2:30341/person/2
-
-
-
-curl -X POST -H "Content-Type: application/json" --data '{"age": 30,"firstName":"Shivapriya", "lastName":"t"}' http://192.168.49.2:30341/person
-
-
-curl -X DELETE http://192.168.49.2:30341/person/3
+curl -X DELETE http://human.com/person/3
 
 
 CLEANUP
-
-kubectl delete -f k8sscripts/secrets.yaml
 
 
 kubectl delete -f k8sscripts/pv.yaml
 
 
 kubectl delete -f k8sscripts/pvc.yaml
+
+
+kubectl delete -f k8sscripts/secrets.yaml
 
 
 kubectl delete -f k8sscripts/deployment-mysql.yaml 
@@ -101,6 +106,9 @@ kubectl delete -f k8sscripts/deployment-spring.yaml
 
 
 kubectl delete -f k8sscripts/service-spring.yaml
+
+
+kubectl delete -f k8sscripts/ingress.yaml
 
 
 docker rmi springboot-mysql-k8s:1
